@@ -1,5 +1,7 @@
 import argparse
-
+import os
+import sys
+sys.path.append(os.getcwd())
 from base_args import add_base_args
 from models.embeddings import compute_embeddings
 
