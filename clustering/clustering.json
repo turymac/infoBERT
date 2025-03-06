@@ -1,0 +1,5 @@
+{
+  "meanshift" : {
+    "bandwidth" : 2.4
+  }
+}
