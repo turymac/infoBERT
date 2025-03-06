@@ -7,12 +7,17 @@ import pandas as pd
 
 from sentence_transformers import SentenceTransformer
 
+from evaluation.correlation import compute_correlation_personal_marks
+from utils.utils import get_test_df, get_basic_stat_clustering, get_personal_scores_df
+from clustering.clustering import apply_clustering
+
 sys.path.append(os.getcwd())
 from base_args import add_base_args
 
 
-def compute_embeddings(model, dataset_version, save_path="datasets/training_set/precomputed_embeddings"):
-    model_name = model.model_name_or_path
+def compute_embeddings(args, model, save_path="datasets/training_set/precomputed_embeddings"):
+    model_name = args.model_name
+    dataset_version = args.dataset
 
     os.makedirs(save_path, exist_ok=True)
     embedding_file = os.path.join(save_path, f"{dataset_version}_{model_name}_embeddings.npy")
@@ -31,8 +36,8 @@ def compute_embeddings(model, dataset_version, save_path="datasets/training_set/
     np.save(embedding_file, embeddings)
     return embeddings
 
-def compute_test_sentences_embeddings(model, save_path="datasets/test_set/precomputed_embeddings"):
-    model_name = model.model_name_or_path
+def compute_test_sentences_embeddings(args, model, save_path="datasets/test_set/precomputed_embeddings"):
+    model_name = args.model_name
 
     os.makedirs(save_path, exist_ok=True)
     embedding_file = os.path.join(save_path, f"{model_name}_test_sentences_embeddings.pkl")
@@ -40,7 +45,7 @@ def compute_test_sentences_embeddings(model, save_path="datasets/test_set/precom
         print(f"Loading precomputed embeddings from {embedding_file}...")
         return pickle.load(open(embedding_file, "rb"))
 
-    df = pd.read_excel(f"datasets/test_set/testset_eng_categories.xlsx")
+    df = get_test_df()
     print(f"{len(df)} test labels read")
 
     print(f"Computing {model_name} embeddings for test_set...")
@@ -59,7 +64,7 @@ def compute_test_sentences_embeddings(model, save_path="datasets/test_set/precom
             embedded_sentences[row.Name].append((frase, embedding))
     pickle.dump(embedded_sentences, open(embedding_file, "wb"))
 
-    return embedded_sentences
+    return df, embedded_sentences
 
 def main():
     parser = argparse.ArgumentParser() # Can be simplified
@@ -70,8 +75,21 @@ def main():
     print(f"Loading model: {args.model}")
     model = SentenceTransformer(args.model)
 
-    embeddings = compute_embeddings(model=model, dataset_version="v3")
-    embedded_sentences = compute_test_sentences_embeddings(model=model)
+    embeddings = compute_embeddings(args=args, model=model)
+    test_df, embedded_sentences = compute_test_sentences_embeddings(args=args, model=model)
+    scores_df = get_personal_scores_df()
+
+    yhat = apply_clustering(args=args, embeddings=embeddings)
+
+    n_clusters, min_cluster_size, mean_cluster_size, max_cluster_size = get_basic_stat_clustering(yhat)
+
+    if n_clusters > 1:
+        # print(f"@ {bandwidth:.1f}")
+        # silhouette_meanshift = silhouette_score(embeddings, yhat) create an alternative function or put inside get_basic_stat_clustering
+        # print(f"- S: {silhouette_meanshift:.3f}")
+        correlations = compute_correlation_personal_marks(args, embeddings, embedded_sentences, yhat, test_df, scores_df, verbose=True)
+    else:
+        # break  # Se c'è un solo cluster, interrompiamo il ciclo
     #reduced_embeddings = apply_pca(embeddings)
 
     #clustering_algorithms = args.clustering_alg.split(",") if args.clustering_alg != "all" else [
