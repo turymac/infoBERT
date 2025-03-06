@@ -7,7 +7,7 @@ from utils.utils import get_basic_stat_clustering
 from evaluation.correlation import compute_correlation_personal_marks
 
 # Carica la configurazione dei clustering da JSON
-with open("clustering_config.json", "r") as f:
+with open("clustering/clustering_config.json", "r") as f:
     CLUSTERING_CONFIG = json.load(f)
 
 def apply_clustering(args, embeddings):
