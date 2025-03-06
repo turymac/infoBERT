@@ -7,16 +7,16 @@ import pandas as pd
 
 from sentence_transformers import SentenceTransformer
 
+
+sys.path.append(os.getcwd())
+
+from base_args import add_base_args
 from evaluation.correlation import compute_correlation_personal_marks
 from utils.utils import get_test_df, get_basic_stat_clustering, get_personal_scores_df
 from clustering.clustering import apply_clustering
 
-sys.path.append(os.getcwd())
-from base_args import add_base_args
-
-
 def compute_embeddings(args, model, save_path="datasets/training_set/precomputed_embeddings"):
-    model_name = args.model_name
+    model_name = args.model
     dataset_version = args.dataset
 
     os.makedirs(save_path, exist_ok=True)
@@ -37,7 +37,7 @@ def compute_embeddings(args, model, save_path="datasets/training_set/precomputed
     return embeddings
 
 def compute_test_sentences_embeddings(args, model, save_path="datasets/test_set/precomputed_embeddings"):
-    model_name = args.model_name
+    model_name = args.model
 
     os.makedirs(save_path, exist_ok=True)
     embedding_file = os.path.join(save_path, f"{model_name}_test_sentences_embeddings.pkl")
@@ -76,7 +76,9 @@ def main():
     model = SentenceTransformer(args.model)
 
     embeddings = compute_embeddings(args=args, model=model)
-    test_df, embedded_sentences = compute_test_sentences_embeddings(args=args, model=model)
+    embedded_sentences = compute_test_sentences_embeddings(args=args, model=model)
+
+    test_df = get_test_df()
     scores_df = get_personal_scores_df()
 
     yhat = apply_clustering(args=args, embeddings=embeddings)
