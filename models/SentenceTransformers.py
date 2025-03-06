@@ -89,6 +89,7 @@ def main():
         # print(f"- S: {silhouette_meanshift:.3f}")
         correlations = compute_correlation_personal_marks(args, embeddings, embedded_sentences, yhat, test_df, scores_df, verbose=True)
     else:
+        pass
         # break  # Se c'è un solo cluster, interrompiamo il ciclo
     #reduced_embeddings = apply_pca(embeddings)
 

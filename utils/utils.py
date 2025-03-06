@@ -35,7 +35,7 @@ def get_metric(metric):
         compute_distance = distance.cityblock
     elif metric == "chebyshev":
         compute_distance = distance.chebyshev
-    elif:
+    else:
         raise "Metric not defined or not supported"
 
     return compute_distance
@@ -43,5 +43,5 @@ def get_metric(metric):
 def get_test_df(path="datasets/test_set/testset_eng_categories.xlsx"):
     return pd.read_excel(path)
 
-def get_personal_scores_df(path="datasets/scores/personal_scores.xlsx"):
+def get_personal_scores_df(path="datasets/scores/personal_score.xlsx"):
     return pd.read_excel(path)
