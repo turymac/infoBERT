@@ -64,7 +64,7 @@ def compute_test_sentences_embeddings(args, model, save_path="datasets/test_set/
             embedded_sentences[row.Name].append((frase, embedding))
     pickle.dump(embedded_sentences, open(embedding_file, "wb"))
 
-    return df, embedded_sentences
+    return embedded_sentences
 
 def main():
     parser = argparse.ArgumentParser() # Can be simplified
