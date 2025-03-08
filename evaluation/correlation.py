@@ -33,21 +33,10 @@ def compute_label_score(scores_list, score='sqrt_sum'):
     else:
         raise ValueError(f"Metodo '{score}' non riconosciuto.")
 
-def compute_correlation_personal_marks(args, embeddings, embedded_sentences, yhat, test_df, scores_df, get_avg=False, verbose=False): #Make get_avg, verbose args parameters
+def compute_correlation_personal_marks(args, embedded_sentences, centroids, test_df, scores_df, get_avg=False, verbose=False): #Make get_avg, verbose args parameters
 
   compute_distance = get_metric(args.metric)
   threshold = float(args.threshold)
-
-  # Trovare cluster unici
-  clusters = unique(yhat)
-
-  centroids = []
-
-  for i, cluster in enumerate(clusters):
-    # Creare indici di riga per campioni con questo cluster
-    row_ix = where(yhat == cluster)
-    centroid = np.mean(embeddings[row_ix], axis=0)
-    centroids.append(centroid)
 
   cat_correlations = {}
   for cat in set(test_df.Category.tolist()):

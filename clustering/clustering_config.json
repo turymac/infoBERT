@@ -8,7 +8,7 @@
         "preference": -50
     },
     "meanshift": {
-        "bandwidth": null
+        "bandwidth": 2.4
     },
     "spectralclustering": {
         "n_clusters": 8,

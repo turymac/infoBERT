@@ -13,6 +13,9 @@ with open("clustering/clustering_config.json", "r") as f:
 def apply_clustering(args, embeddings):
     clustering_alg = args.clustering.lower()
 
+    if clustering_alg == "no_clustering":
+        return embeddings
+
     if clustering_alg not in CLUSTERING_CONFIG:
         raise ValueError(f"Clustering algorithm '{clustering_alg}' is not supported.")
 
@@ -158,4 +161,8 @@ def apply_clustering(args, embeddings):
     else:
         raise ValueError(f"There exists a configuration for '{clustering_alg}' but it's not actually implemented.")
 
-    return clustering_model.fit_predict(embeddings)
+    yhat = clustering_model.fit_predict(embeddings)
+    # Compute centroids for each unique cluster
+    centroids = [np.mean(embeddings[np.where(yhat == cluster)], axis=0) for cluster in np.unique(yhat)]
+
+    return centroids
