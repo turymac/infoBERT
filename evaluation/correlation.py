@@ -6,6 +6,33 @@ from openpyxl import Workbook
 
 from utils.utils import get_metric
 
+# Funzione ausiliaria per calcolare lo score finale della label
+def compute_label_score(scores_list, score='sqrt_sum'):
+    """
+    Calcola lo score finale della label.
+
+    Parameters:
+    - scores_list: lista degli score parziali delle frasi
+    - score: metodo di aggregazione degli score ('sqrt_sum', 'inverse', 'gaussian', 'mean')
+
+    Returns:
+    - score finale aggregato
+    """
+    if not scores_list:
+        return 0
+
+    if score == 'sum':
+        return np.sum(scores_list)
+    if score == 'sqrt_sum':
+        return np.sqrt(np.sum(scores_list))
+    elif score == 'inverse':
+        return np.sum([1/(1 + d) for d in scores_list])
+    elif score == 'gaussian':
+        sigma = np.mean(scores_list) / 2
+        return np.sum([np.exp(-(d**2)/(2 * sigma**2)) for d in scores_list])
+    else:
+        raise ValueError(f"Metodo '{score}' non riconosciuto.")
+
 def compute_correlation_personal_marks(args, embeddings, embedded_sentences, yhat, test_df, scores_df, get_avg=False, verbose=False): #Make get_avg, verbose args parameters
 
   compute_distance = get_metric(args.metric)
@@ -30,6 +57,7 @@ def compute_correlation_personal_marks(args, embeddings, embedded_sentences, yha
     model_cat_scores = []
       # Itera su ciascuna etichetta in `etichette`
     for product in cat_df.Name.tolist():
+        partial_scores = []
         punteggio_totale = 0
         for _, emb_sentence in embedded_sentences[product]:
 
@@ -43,8 +71,10 @@ def compute_correlation_personal_marks(args, embeddings, embedded_sentences, yha
                     distanza_minima = distanza
 
             # Calcola lo score parziale della frase
-            punteggio_frase = (threshold - distanza_minima) if distanza_minima < threshold else 0
-            punteggio_totale += punteggio_frase
+            if distanza_minima < threshold:
+                partial_scores.append((threshold - distanza_minima))
+
+        punteggio_totale = compute_label_score(partial_scores, score=args.score)
 
         # Aggiunge la riga per l'etichetta
         model_cat_scores.append(punteggio_totale)
