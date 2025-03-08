@@ -81,7 +81,7 @@ def main():
     test_df = get_test_df()
     scores_df = get_personal_scores_df()
 
-    yhat = apply_clustering(args=args, embeddings=embeddings)
+    yhat, centroids = apply_clustering(args=args, embeddings=embeddings)
 
     n_clusters, min_cluster_size, mean_cluster_size, max_cluster_size = get_basic_stat_clustering(yhat)
 
@@ -89,7 +89,7 @@ def main():
         # print(f"@ {bandwidth:.1f}")
         # silhouette_meanshift = silhouette_score(embeddings, yhat) create an alternative function or put inside get_basic_stat_clustering
         # print(f"- S: {silhouette_meanshift:.3f}")
-        correlations = compute_correlation_personal_marks(args, embeddings, embedded_sentences, yhat, test_df, scores_df, verbose=True)
+        correlations = compute_correlation_personal_marks(args, embedded_sentences, centroids, test_df, scores_df, verbose=True)
     else:
         pass
         # break  # Se c'è un solo cluster, interrompiamo il ciclo
