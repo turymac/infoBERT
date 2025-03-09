@@ -40,22 +40,24 @@ def get_metric(metric):
 
     return compute_distance
 
-# Funzione ausiliaria per calcolare lo score finale della label
-def get_label_score(args, scores_list):
-
+# Auxiliary function to compute the final label score from a matrix
+def get_label_score(args, scores_matrix):
     score = args.score
 
     if score == 'sum':
-        return np.sum(scores_list)
-    if score == 'sqrt_sum':
-        return np.sqrt(np.sum([s**2 for s in scores_list]))
+        row_scores = np.sum(scores_matrix, axis=1)
+    elif score == 'sqrt_sum':
+        row_scores = np.sqrt(np.sum(scores_matrix**2, axis=1))
     elif score == 'inverse':
-        return np.sum([1/(1 + d) for d in scores_list])
+        row_scores = np.sum(1 / (1 + scores_matrix), axis=1)
     elif score == 'gaussian':
-        sigma = np.mean(scores_list) / 2
-        return np.sum([np.exp(-(d**2)/(2 * sigma**2)) for d in scores_list])
+        sigma = np.mean(scores_matrix, axis=1, keepdims=True) / 2
+        row_scores = np.sum(np.exp(-(scores_matrix**2) / (2 * sigma**2)), axis=1)
     else:
-        raise ValueError(f"Metodo '{score}' non riconosciuto.")
+        raise ValueError(f"Method '{score}' not recognized.")
+
+    # Aggregate all row scores with a simple sum
+    return np.sum(row_scores)
 
 def get_test_df(path="datasets/test_set/testset_eng_categories.xlsx"):
     return pd.read_excel(path)

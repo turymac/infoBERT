@@ -27,17 +27,15 @@ def compute_correlation_personal_marks(args, embedded_sentences, centroids, test
     for product in cat_df.Name.tolist():
         partial_scores = []
         for _, emb_sentence in embedded_sentences[product]:
-
+            sentence_score = []
             # Calcola la distanza tra l'embedding della frase e ogni centroide
             distances = [compute_distance(emb_sentence, centroid) for centroid in centroids]
             knn_distances = sorted(distances)[:knn]
             # Calcola lo score parziale della frase
-            for id, distance in knn_distances:
-                if distance < thresholds[id]:
-                    partial_scores.append(thresholds[id] - distance)
-                else:
-                    partial_scores.append(0)
+            sentence_score = [max(0, thresholds[id] - distance) for id, distance in enumerate(knn_distances)]
 
+            partial_scores.append(sentence_score)
+        partial_scores = np.array(partial_scores)
         punteggio_totale = get_label_score(args, partial_scores)
 
         # Aggiunge la riga per l'etichetta
