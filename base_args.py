@@ -12,8 +12,8 @@ def add_base_args(parser):
                         type=str, choices=["cosine", "euclidean", "cityblock", "chebyshev"], default="cosine")
     parser.add_argument("--score", help="Scoring function to assign score to labels.",
                         type=str, choices=["sum", "sqrt_sum", "inverse", "gaussian",], default="sum")
-    parser.add_argument("--threshold", help="Threshold to distinguish between informative and non-informative content.",
-                        type=float, default=0.5)
+    parser.add_argument("--thresholds", help="Thresholds to distinguish between informative and non-informative content.",
+                        type=float, nargs='+', default=0.5)
     parser.add_argument("--knn", help="Number of nearest neighbors to consider for the final score.",
                         type=int, default=5)
     return parser

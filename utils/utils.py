@@ -40,6 +40,23 @@ def get_metric(metric):
 
     return compute_distance
 
+# Funzione ausiliaria per calcolare lo score finale della label
+def get_label_score(args, scores_list):
+
+    score = args.score
+
+    if score == 'sum':
+        return np.sum(scores_list)
+    if score == 'sqrt_sum':
+        return np.sqrt(np.sum([s**2 for s in scores_list]))
+    elif score == 'inverse':
+        return np.sum([1/(1 + d) for d in scores_list])
+    elif score == 'gaussian':
+        sigma = np.mean(scores_list) / 2
+        return np.sum([np.exp(-(d**2)/(2 * sigma**2)) for d in scores_list])
+    else:
+        raise ValueError(f"Metodo '{score}' non riconosciuto.")
+
 def get_test_df(path="datasets/test_set/testset_eng_categories.xlsx"):
     return pd.read_excel(path)
 
