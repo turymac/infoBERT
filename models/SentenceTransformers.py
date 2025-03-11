@@ -11,7 +11,7 @@ from sentence_transformers import SentenceTransformer
 sys.path.append(os.getcwd())
 
 from base_args import add_base_args
-from evaluation.correlation import compute_correlation_personal_marks
+from evaluation.correlation import compute_correlation_personal_marks, compute_correlation_form_marks
 from utils.utils import get_test_df, get_basic_stat_clustering, get_personal_scores_df
 from clustering.clustering import apply_clustering
 
@@ -89,7 +89,10 @@ def main():
         # print(f"@ {bandwidth:.1f}")
         # silhouette_meanshift = silhouette_score(embeddings, yhat) create an alternative function or put inside get_basic_stat_clustering
         # print(f"- S: {silhouette_meanshift:.3f}")
-        correlations = compute_correlation_personal_marks(args, embedded_sentences, centroids, test_df, scores_df, verbose=True)
+        if args.marks == "personal":
+            correlations = compute_correlation_personal_marks(args, embedded_sentences, centroids, test_df, scores_df, verbose=True)
+        else:
+            compute_correlation_form_marks(args, embedded_sentences, centroids, test_df, verbose=True)
     else:
         pass
         # break  # Se c'è un solo cluster, interrompiamo il ciclo

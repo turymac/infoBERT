@@ -6,7 +6,47 @@ from openpyxl import Workbook
 
 from utils.utils import get_metric, get_label_score
 
+def compute_correlation_form_marks(args, embedded_sentences, centroids, test_df, verbose=False): #Make get_avg, verbose args parameters
 
+  compute_distance = get_metric(args.metric)
+  knn = args.knn
+  thresholds = args.thresholds
+
+  if knn != len(thresholds):
+      raise ValueError('knn must be equal to len(thresholds)') # Work on 2 thresholds and parameter alpha
+
+  for cat in set(test_df.Category.tolist()):
+    print(f">> {cat}:")
+
+    cat_df  = test_df.loc[test_df['Category'] == cat].copy()
+    # cat_df.sort_values(by="Name", inplace=True)
+
+    model_cat_scores = {}
+      # Itera su ciascuna etichetta in `etichette`
+    for product in cat_df.Name.tolist():
+        partial_scores = []
+        for _, emb_sentence in embedded_sentences[product]:
+            sentence_score = []
+            # Calcola la distanza tra l'embedding della frase e ogni centroide
+            distances = [compute_distance(emb_sentence, centroid) for centroid in centroids]
+            knn_distances = sorted(distances)[:knn]
+            # Calcola lo score parziale della frase
+            sentence_score = [max(0, thresholds[id] - distance) for id, distance in enumerate(knn_distances)]
+
+            partial_scores.append(sentence_score)
+        partial_scores = np.array(partial_scores)
+        punteggio_totale = get_label_score(args, partial_scores)
+
+        # Aggiunge la riga per l'etichetta
+        model_cat_scores[product] = punteggio_totale
+
+    np_order = np.load(f"datasets/scores/np_order/{cat}.npy")
+    ordered_model_scores = np.array([model_cat_scores[prod] for prod in np_order])
+    np_scores = np.load(f"datasets/scores/np_scores/{cat}.npy")
+
+    cat_correlation = [np.corrcoef(ordered_model_scores.flatten(), np_scores[row, :])[0,1] for row in np_scores.shape[0]]
+    if verbose == True:
+      print(f"> {cat}: {cat_correlation:.3f}")
 
 def compute_correlation_personal_marks(args, embedded_sentences, centroids, test_df, scores_df, get_avg=False, verbose=False): #Make get_avg, verbose args parameters
 
