@@ -1,4 +1,3 @@
-from google.colab import files
 from openpyxl import Workbook
 
 from utils.utils import get_metric
@@ -37,5 +36,3 @@ def partial_distance_knn_to_excel(args, embedded_sentences, centroids, test_df):
 
     # Salva il workbook in un file .xlsx
     wb.save(f"distance-{model_name}-{args.metric}-{dataset_version}.xlsx")
-    # Scarica il workbook
-    files.download(f"distance-{model_name}-{args.metric}-{dataset_version}.xlsx")
