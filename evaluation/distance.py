@@ -5,7 +5,6 @@ from utils.utils import get_metric
 
 def partial_distance_knn_to_excel(args, embedded_sentences, centroids, test_df):
     compute_distance = get_metric(args.metric)
-    threshold = float(args.threshold)
     knn = args.knn
 
     model_name = args.model.replace("/","_")
@@ -37,6 +36,6 @@ def partial_distance_knn_to_excel(args, embedded_sentences, centroids, test_df):
             ws.append(["", "", ""])  # Riga vuota per separazione
 
     # Salva il workbook in un file .xlsx
-    wb.save(f"{model_name}@{args.metric}_{threshold}-{dataset_version}.xlsx")
+    wb.save(f"distance-{model_name}-{args.metric}-{dataset_version}.xlsx")
     # Scarica il workbook
-    files.download(f"{model_name}@{args.metric}_{threshold}-{dataset_version}.xlsx")
+    files.download(f"distance-{model_name}-{args.metric}-{dataset_version}.xlsx")
