@@ -1,6 +1,3 @@
-import argparse
-import ast
-
 def add_base_args(parser):
     parser.add_argument("--model", help="Model name to use for embedding.",
                         type=str, required=True)
