@@ -12,11 +12,12 @@ sys.path.append(os.getcwd())
 
 from base_args import add_base_args
 from evaluation.correlation import compute_correlation_personal_marks, compute_correlation_form_marks
+from evaluation.distance import partial_distance_knn_to_excel
 from utils.utils import get_test_df, get_basic_stat_clustering, get_personal_scores_df
 from clustering.clustering import apply_clustering
 
 def compute_embeddings(args, model, save_path="datasets/training_set/precomputed_embeddings"):
-    model_name = args.model
+    model_name = args.model.replace("/", "_")
     dataset_version = args.dataset
 
     os.makedirs(save_path, exist_ok=True)
@@ -37,7 +38,7 @@ def compute_embeddings(args, model, save_path="datasets/training_set/precomputed
     return embeddings
 
 def compute_test_sentences_embeddings(args, model, save_path="datasets/test_set/precomputed_embeddings"):
-    model_name = args.model
+    model_name = args.model.replace("/", "_")
 
     os.makedirs(save_path, exist_ok=True)
     embedding_file = os.path.join(save_path, f"{model_name}_test_sentences_embeddings.pkl")
@@ -89,10 +90,17 @@ def main():
         # print(f"@ {bandwidth:.1f}")
         # silhouette_meanshift = silhouette_score(embeddings, yhat) create an alternative function or put inside get_basic_stat_clustering
         # print(f"- S: {silhouette_meanshift:.3f}")
-        if args.marks == "personal":
-            correlations = compute_correlation_personal_marks(args, embedded_sentences, centroids, test_df, scores_df, verbose=True)
+        if args.run == "correlation":
+            if args.marks == "personal":
+                compute_correlation_personal_marks(args, embedded_sentences, centroids, test_df, scores_df, verbose=True)
+            else:
+                compute_correlation_form_marks(args, embedded_sentences, centroids, test_df, verbose=True)
+        elif args.run == "distance":
+            partial_distance_knn_to_excel(args, embedded_sentences, centroids, test_df)
         else:
-            compute_correlation_form_marks(args, embedded_sentences, centroids, test_df, verbose=True)
+            raise NotImplementedError
+
+
     else:
         pass
         # break  # Se c'è un solo cluster, interrompiamo il ciclo
