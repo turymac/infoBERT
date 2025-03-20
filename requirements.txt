@@ -1,5 +1,6 @@
 sentence-transformers
 openpyxl
 scikit-learn~=1.6.1
-numpy<2
+numpy
 datasets
+fsspec==2025.3.0

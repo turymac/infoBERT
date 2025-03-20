@@ -21,7 +21,10 @@ def add_base_args(parser):
                         type=str, required=True)
     parser.add_argument("--epochs", help="Number of epochs to fine-tune for.",
                         type=int, default=3)
+    parser.add_argument("--save_strategy", help="Save strategy for checkpoints.",
+                        type=str, choices=["no", "epoch"], default="no")
     return parser
+
 
 def main():
     parser = argparse.ArgumentParser() # Can be simplified
@@ -32,6 +35,7 @@ def main():
     model_name = args.model
     dataset = args.dataset
     finetuned_alias = args.alias
+    save_strategy=args.save_strategy
 
     epochs = args.epochs
 
@@ -59,7 +63,7 @@ def main():
         fp16=True,  # Set to False if GPU can't handle FP16
         bf16=False,  # Set to True if GPU supports BF16
         batch_sampler=BatchSamplers.NO_DUPLICATES,  # MultipleNegativesRankingLoss benefits from no duplicates
-        save_strategy="no"
+        save_strategy=save_strategy
     )
 
     # 5. Create a trainer & train
@@ -72,7 +76,7 @@ def main():
     trainer.train()
 
     # 6. Save the trained model
-    model.save_pretrained(f"models/{finetuned_alias}")
+    model.save_pretrained(f"models/{finetuned_alias}_{epochs}")
 
 
 if __name__ == "__main__":

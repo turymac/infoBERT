@@ -64,3 +64,6 @@ def get_test_df(path="datasets/test_set/testset_eng_categories.xlsx"):
 
 def get_personal_scores_df(path="datasets/scores/personal_score.xlsx"):
     return pd.read_excel(path)
+
+def get_label_df(path="datasets/test_set/test_sentences.xlsx"):
+    return pd.read_excel(path)

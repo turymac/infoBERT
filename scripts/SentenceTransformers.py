@@ -13,7 +13,8 @@ sys.path.append(os.getcwd())
 from base_args import add_base_args
 from evaluation.correlation import compute_correlation_personal_marks, compute_correlation_form_marks
 from evaluation.distance import partial_distance_knn_to_excel
-from utils.utils import get_test_df, get_basic_stat_clustering, get_personal_scores_df
+from evaluation.accuracy import compute_accuracy
+from utils.utils import get_test_df, get_basic_stat_clustering, get_personal_scores_df, get_label_df
 from clustering.clustering import apply_clustering
 
 def compute_embeddings(args, model, save_path="datasets/training_set/precomputed_embeddings"):
@@ -78,9 +79,9 @@ def main():
 
     embeddings = compute_embeddings(args=args, model=model)
     embedded_sentences = compute_test_sentences_embeddings(args=args, model=model)
+    # Write compute_test_sentences_label
 
     test_df = get_test_df()
-    scores_df = get_personal_scores_df()
 
     yhat, centroids = apply_clustering(args=args, embeddings=embeddings)
 
@@ -92,11 +93,15 @@ def main():
         # print(f"- S: {silhouette_meanshift:.3f}")
         if args.run == "correlation":
             if args.marks == "personal":
+                scores_df = get_personal_scores_df()
                 compute_correlation_personal_marks(args, embedded_sentences, centroids, test_df, scores_df, verbose=True)
             else:
                 compute_correlation_form_marks(args, embedded_sentences, centroids, test_df, verbose=True)
         elif args.run == "distance":
             partial_distance_knn_to_excel(args, embedded_sentences, centroids, test_df)
+        elif args.run == "accuracy":
+            label_df = get_label_df
+            compute_accuracy(args, model, centroids, label_df)
         else:
             raise NotImplementedError
 
