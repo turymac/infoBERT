@@ -100,7 +100,7 @@ def main():
         elif args.run == "distance":
             partial_distance_knn_to_excel(args, embedded_sentences, centroids, test_df)
         elif args.run == "accuracy":
-            label_df = get_label_df
+            label_df = get_label_df()
             compute_accuracy(args, model, centroids, label_df)
         else:
             raise NotImplementedError
