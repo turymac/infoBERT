@@ -78,7 +78,6 @@ def main():
     model = SentenceTransformer(args.model)
 
     embeddings = compute_embeddings(args=args, model=model)
-    embedded_sentences = compute_test_sentences_embeddings(args=args, model=model)
     # Write compute_test_sentences_label
 
     test_df = get_test_df()
@@ -92,12 +91,14 @@ def main():
         # silhouette_meanshift = silhouette_score(embeddings, yhat) create an alternative function or put inside get_basic_stat_clustering
         # print(f"- S: {silhouette_meanshift:.3f}")
         if args.run == "correlation":
+            embedded_sentences = compute_test_sentences_embeddings(args=args, model=model)
             if args.marks == "personal":
                 scores_df = get_personal_scores_df()
                 compute_correlation_personal_marks(args, embedded_sentences, centroids, test_df, scores_df, verbose=True)
             else:
                 compute_correlation_form_marks(args, embedded_sentences, centroids, test_df, verbose=True)
         elif args.run == "distance":
+            embedded_sentences = compute_test_sentences_embeddings(args=args, model=model)
             partial_distance_knn_to_excel(args, embedded_sentences, centroids, test_df)
         elif args.run == "accuracy":
             label_df = get_label_df()

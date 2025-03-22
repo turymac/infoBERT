@@ -7,7 +7,7 @@ def compute_accuracy(args, model, centroids, sentences_df):
     compute_distance = get_metric(args.metric)
 
     model_name = args.model.replace("/", "_")
-    threshold = args.threshold  # Assumo che la soglia sia definita in args
+    threshold = args.thresholds  # Assumo che la soglia sia definita in args
 
     print(f"Computing accuracy on test set for {model_name}")
 
@@ -15,7 +15,7 @@ def compute_accuracy(args, model, centroids, sentences_df):
 
     for cat in set(sentences_df["Category"].tolist()):
         cat_df = sentences_df.loc[sentences_df["Category"] == cat].copy()
-        cat_embeddings = model.encode(cat_df["Sentence"])  # Calcola gli embeddings con model.encode()
+        cat_embeddings = model.encode(cat_df["Sentence"].tolist())  # Calcola gli embeddings con model.encode()
         cat_labels = np.array(cat_df["Environment_info"].tolist())
 
         model_labels = []
