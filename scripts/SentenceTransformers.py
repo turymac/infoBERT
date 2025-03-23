@@ -13,7 +13,7 @@ sys.path.append(os.getcwd())
 from base_args import add_base_args
 from evaluation.correlation import compute_correlation_personal_marks, compute_correlation_form_marks
 from evaluation.distance import partial_distance_knn_to_excel
-from evaluation.accuracy import compute_accuracy
+from evaluation.accuracy import compute_accuracy, compute_auroc
 from utils.utils import get_test_df, get_basic_stat_clustering, get_personal_scores_df, get_label_df
 from clustering.clustering import apply_clustering
 
@@ -103,6 +103,9 @@ def main():
         elif args.run == "accuracy":
             label_df = get_label_df()
             compute_accuracy(args, model, centroids, label_df)
+        elif args.run == "auroc":
+            label_df = get_label_df()
+            compute_auroc(args, model, centroids, label_df)
         else:
             raise NotImplementedError
 
