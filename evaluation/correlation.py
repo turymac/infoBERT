@@ -23,7 +23,8 @@ def compute_correlation_form_marks(args, embedded_sentences, centroids, test_df,
     if knn != len(thresholds):
         raise ValueError('knn must be equal to len(thresholds)')  # Work on 2 thresholds and parameter alpha
 
-    for cat in set(test_df.Category.tolist()):
+    categories = sorted(test_df["Category"].unique())
+    for cat in categories:
         print(f">> {cat}:")
 
         cat_df = test_df.loc[test_df['Category'] == cat].copy()
@@ -82,7 +83,8 @@ def compute_correlation_personal_marks(args, embedded_sentences, centroids, test
         raise ValueError('knn must be equal to len(thresholds)')  # Work on 2 thresholds and parameter alpha
 
     cat_correlations = {}
-    for cat in set(test_df.Category.tolist()):
+    categories = sorted(test_df["Category"].unique())
+    for cat in categories:
         cat_df = test_df.loc[test_df['Category'] == cat].copy()
         cat_df.sort_values(by="Name", inplace=True)
 

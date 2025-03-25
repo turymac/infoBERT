@@ -48,7 +48,8 @@ def compute_auroc(args, model, centroids, sentences_df):
 
     tot_labels = []
     tot_scores = []
-    for cat in set(sentences_df["Category"].tolist()):
+    categories = sorted(sentences_df["Category"].unique())
+    for cat in categories:
         cat_df = sentences_df.loc[sentences_df["Category"] == cat].copy()
         cat_embeddings = model.encode(cat_df["Sentence"].tolist())  # Calcola gli embeddings con model.encode()
         cat_labels = np.array(cat_df["Environment_info"].tolist())
@@ -79,7 +80,8 @@ def compute_accuracy(args, model, centroids, sentences_df):
     print(f"Computing accuracy on test set for {model_name}")
 
     accuracies = []
-    for cat in set(sentences_df["Category"].tolist()):
+    categories = sorted(sentences_df["Category"].unique())
+    for cat in categories:
         cat_df = sentences_df.loc[sentences_df["Category"] == cat].copy()
         cat_embeddings = model.encode(cat_df["Sentence"].tolist())  # Calcola gli embeddings con model.encode()
         cat_labels = np.array(cat_df["Environment_info"].tolist())

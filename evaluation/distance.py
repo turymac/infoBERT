@@ -17,7 +17,7 @@ def partial_distance_knn_to_excel(args, embedded_sentences, centroids, test_df):
     headers = ["Name", "Category", "Frase"] + [f"Distanza Top {i + 1}" for i in range(knn)]
     ws.append(headers)
 
-    for cat in set(test_df.Category.tolist()):
+    for cat in set(test_df.Category.tolist()): #Sort categories for Excel
         cat_df = test_df.loc[test_df['Category'] == cat].copy()
         cat_df.sort_values(by="Name", inplace=True)
 
