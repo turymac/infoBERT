@@ -76,7 +76,9 @@ def compute_test_sentences_embeddings(args, model, save_path="datasets/test_set/
 #     parts = [s.strip() for s in re.split(pattern, text) if s.strip()]
 #     return parts
 
-def compute_distances_by_checkpoint(args, checkpoints_dir, output_dir="checkpoints_eval"):
+def compute_distances_by_checkpoint(args, output_dir="checkpoints_eval"):
+    checkpoints_dir = args.model
+
     os.makedirs(output_dir, exist_ok=True)
 
     df = get_test_df()
