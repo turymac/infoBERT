@@ -3,6 +3,7 @@ import pandas as pd
 
 from sklearn.decomposition import PCA
 from scipy.spatial import distance
+from sklearn.metrics import accuracy_score, roc_curve, auc
 
 def apply_pca(embeddings):
     pca = PCA(n_components=0.95)  # Keep 95% variance
@@ -39,6 +40,36 @@ def get_metric(metric):
         raise "Metric not defined or not supported"
 
     return compute_distance
+
+def get_best_threshold(args, model, centroids, label_df):
+    compute_distance = get_metric(args.metric)
+
+    model_name = args.model.replace("/", "_")
+
+    print(f"Computing AUROC on test set for {model_name}")
+
+    tot_labels = []
+    tot_scores = []
+    categories = sorted(label_df["category"].unique())
+    for cat in categories:
+        cat_df = label_df.loc[label_df["category"] == cat].copy()
+        cat_embeddings = model.encode(cat_df["sentence"].tolist())  # Calcola gli embeddings con model.encode()
+        cat_labels = np.array(cat_df["environment_info"].tolist())
+        tot_labels.append(cat_labels)
+
+        cat_scores = []
+        for embedding in cat_embeddings:
+            # Calcola la distanza tra l'embedding della frase e ogni centroide
+            distances = [compute_distance(embedding, centroid) for centroid in centroids]
+            cat_scores.append(-min(distances))
+
+        tot_scores.append(np.array(cat_scores))
+
+    fpr, tpr, thresholds = roc_curve( np.concatenate(tot_labels), np.concatenate(tot_scores))
+
+    youden_j = tpr - fpr
+    optimal_idx = np.argmax(youden_j)
+    return thresholds[optimal_idx]
 
 # Auxiliary function to compute the final label score from a matrix
 def get_label_score(args, scores_matrix):

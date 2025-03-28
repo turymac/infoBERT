@@ -6,7 +6,7 @@ from sklearn.metrics import accuracy_score, roc_curve, auc
 
 from utils.utils import get_metric
 
-def compute_auroc(args, model, centroids, sentences_df):
+def compute_auroc(args, model, centroids, label_df):
 
     def x(path, labels,  scores):
 
@@ -48,9 +48,9 @@ def compute_auroc(args, model, centroids, sentences_df):
 
     tot_labels = []
     tot_scores = []
-    categories = sorted(sentences_df["Category"].unique())
+    categories = sorted(label_df["Category"].unique())
     for cat in categories:
-        cat_df = sentences_df.loc[sentences_df["Category"] == cat].copy()
+        cat_df = label_df.loc[label_df["Category"] == cat].copy()
         cat_embeddings = model.encode(cat_df["Sentence"].tolist())  # Calcola gli embeddings con model.encode()
         cat_labels = np.array(cat_df["Environment_info"].tolist())
         tot_labels.append(cat_labels)
@@ -71,7 +71,7 @@ def compute_auroc(args, model, centroids, sentences_df):
 
     return 0
 
-def compute_accuracy(args, model, centroids, sentences_df):
+def compute_accuracy(args, model, centroids, label_df):
     compute_distance = get_metric(args.metric)
 
     model_name = args.model.replace("/", "_")
@@ -80,9 +80,9 @@ def compute_accuracy(args, model, centroids, sentences_df):
     print(f"Computing accuracy on test set for {model_name}")
 
     accuracies = []
-    categories = sorted(sentences_df["Category"].unique())
+    categories = sorted(label_df["Category"].unique())
     for cat in categories:
-        cat_df = sentences_df.loc[sentences_df["Category"] == cat].copy()
+        cat_df = label_df.loc[label_df["Category"] == cat].copy()
         cat_embeddings = model.encode(cat_df["Sentence"].tolist())  # Calcola gli embeddings con model.encode()
         cat_labels = np.array(cat_df["Environment_info"].tolist())
 
