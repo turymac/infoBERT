@@ -16,5 +16,5 @@ def add_base_args(parser):
     parser.add_argument("--knn", help="Number of nearest neighbors to consider for the final score.",
                         type=int, default=5)
     parser.add_argument("--run", help="What main operation the script will perform",
-                        type=str, choices=["correlation", "distance", "accuracy", "auroc"], required=True)
+                        type=str, choices=["correlation", "distance", "accuracy", "auroc", "ckp_distance"], required=True)
     return parser

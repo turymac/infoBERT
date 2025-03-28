@@ -1,7 +1,9 @@
 import argparse
 import os
-import pickle
+import re
 import sys
+
+import pickle
 import numpy as np
 import pandas as pd
 
@@ -68,11 +70,86 @@ def compute_test_sentences_embeddings(args, model, save_path="datasets/test_set/
 
     return embedded_sentences
 
+# def split_sentences(text):
+#     # Non splitta URL (es: www.example.com)
+#     pattern = r'(?<!\b\w{2,10})\.(?!\w{2,4}\b|com|org|net|it|html|php)'
+#     parts = [s.strip() for s in re.split(pattern, text) if s.strip()]
+#     return parts
+
+def compute_distances_by_checkpoint(args, checkpoints_dir, output_dir="checkpoints_eval"):
+    os.makedirs(output_dir, exist_ok=True)
+
+    df = get_test_df()
+    print(f"{len(df)} test labels read")
+
+    # Step 1: Creazione DataFrame frasi splittate (mantenendo traccia del documento originale)
+    all_sentences = []
+    for row in df.itertuples(index=False):
+        frasi = row.Label.split('.') #split_sentences(getattr(row, sentence_column))
+        all_sentences.extend(frasi)
+
+    # Rimuove spazi e filtra le frasi vuote ex post
+    all_sentences = [s.strip() for s in all_sentences if s.strip()]
+    # Ordina
+    all_sentences = sorted(all_sentences)
+
+    # Per costruzione: Excel base da restituire
+    excel_df = pd.DataFrame({"Sentence": all_sentences})
+
+    # Step 2: Caricamento dei checkpoint e calcolo delle distanze
+    for file in sorted(os.listdir(checkpoints_dir)):
+        ckpt_path = os.path.join(checkpoints_dir, file)
+        if not os.path.isdir(ckpt_path):
+            continue
+        try:
+            model = SentenceTransformer(ckpt_path)
+        except Exception as e:
+            print(f"Errore nel caricamento del modello da {ckpt_path}: {e}")
+            continue
+
+        embeddings = compute_embeddings(args=args, model=model)
+
+        yhat, centroids = apply_clustering(args=args, embeddings=embeddings)
+
+        n_clusters, min_cluster_size, mean_cluster_size, max_cluster_size = get_basic_stat_clustering(yhat)
+
+        if n_clusters > 1:
+            test_embeddings = model.encode(all_sentences, show_progress_bar=True, convert_to_numpy=True)
+
+            # Calcola le distanze di ciascun embedding da tutti i centroidi
+            compute_distance = get_metric(args.metric)
+            # Calcola una matrice (n_frasi x n_centroidi)
+            distance_matrix = np.array([
+                [compute_distance(embedding, centroid) for centroid in centroids]
+                for embedding in test_embeddings
+            ])
+
+            # Per ogni frase, seleziona la distanza dal centroide più vicino
+            min_dists = np.min(distance_matrix, axis=1)
+
+            # # Salva anche come .npy
+            # ckpt_name = file.replace("/", "_")
+            # npy_path = os.path.join(output_dir, f"{ckpt_name}_min_distances.npy")
+            # np.save(npy_path, min_dists)
+
+            # Aggiunge la colonna delle distanze nel DataFrame finale
+            excel_df[file] = min_dists
+
+    # Salva l'excel finale
+    excel_path = os.path.join(output_dir, "distances_by_checkpoint.xlsx")
+    excel_df.to_excel(excel_path, index=False)
+
+    return excel_df
+
 def main():
     parser = argparse.ArgumentParser() # Can be simplified
     parser = add_base_args(parser)
 
     args = parser.parse_args()
+
+    if args.run == "ckp_distance": # Temp
+        compute_distances_by_checkpoint(args)
+        return
 
     print(f"Loading model: {args.model}")
     model = SentenceTransformer(args.model)
