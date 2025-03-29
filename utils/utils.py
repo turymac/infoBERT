@@ -44,10 +44,6 @@ def get_metric(metric):
 def get_best_threshold(args, model, centroids, label_df):
     compute_distance = get_metric(args.metric)
 
-    model_name = args.model.replace("/", "_")
-
-    print(f"Computing AUROC on test set for {model_name}")
-
     tot_labels = []
     tot_scores = []
     categories = sorted(label_df["category"].unique())

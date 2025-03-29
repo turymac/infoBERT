@@ -1,6 +1,8 @@
 def add_base_args(parser):
     parser.add_argument("--model", help="Model name to use for embedding.",
                         type=str, required=True)
+    parser.add_argument("--alias", help="Alias to use for fine-tuned model.",
+                        type=str)
     parser.add_argument("--marks", help="Marks to which compute correlation.",
                         type=str, choices=["personal", "form"], default="form")
     parser.add_argument("--dataset", help="Version of training dataset.",

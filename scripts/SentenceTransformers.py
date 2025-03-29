@@ -16,8 +16,10 @@ from base_args import add_base_args
 from evaluation.correlation import compute_correlation_personal_marks, compute_correlation_form_marks
 from evaluation.distance import partial_distance_knn_to_excel
 from evaluation.accuracy import compute_accuracy, compute_auroc
-from utils.utils import get_test_df, get_basic_stat_clustering, get_personal_scores_df, get_label_df, get_metric, get_label_score, get_best_threshold
+from utils.utils import get_test_df, get_basic_stat_clustering, get_personal_scores_df, get_label_df, get_metric, \
+    get_label_score, get_best_threshold
 from clustering.clustering import apply_clustering
+
 
 def compute_embeddings(args, model, save_path="datasets/training_set/precomputed_embeddings"):
     model_name = args.model.replace("/", "_")
@@ -31,7 +33,7 @@ def compute_embeddings(args, model, save_path="datasets/training_set/precomputed
         return np.load(embedding_file)
 
     df = pd.read_excel(f"datasets/training_set/environmental_sentences_filtered_{dataset_version}.xlsx")
-    df['Label'] = df['Environmental Sentences'] # Modify xlsx
+    df['Label'] = df['Environmental Sentences']  # Modify xlsx
     sentences = df.Label.tolist()
     print(f"{len(sentences)} training sentences read")
 
@@ -39,6 +41,7 @@ def compute_embeddings(args, model, save_path="datasets/training_set/precomputed
     embeddings = model.encode(sentences, show_progress_bar=True)
     np.save(embedding_file, embeddings)
     return embeddings
+
 
 def compute_test_sentences_embeddings(args, model, save_path="datasets/test_set/precomputed_embeddings"):
     model_name = args.model.replace("/", "_")
@@ -70,6 +73,7 @@ def compute_test_sentences_embeddings(args, model, save_path="datasets/test_set/
 
     return embedded_sentences
 
+
 # def split_sentences(text):
 #     # Non splitta URL (es: www.example.com)
 #     pattern = r'(?<!\b\w{2,10})\.(?!\w{2,4}\b|com|org|net|it|html|php)'
@@ -78,12 +82,12 @@ def compute_test_sentences_embeddings(args, model, save_path="datasets/test_set/
 
 def extract_ckpt_number(name):
     match = re.search(r"checkpoint-(\d+)", name)
-    return int(match.group(1)) if match else float('inf')
+    return int(match.group(1)) if match else -1
+
 
 def compute_distances_by_checkpoint(args, output_dir="checkpoints_eval"):
-
-    checkpoints_dir = args.model
     model_name = args.model.replace("/", "_")
+    alias = args.alias
     dataset_version = args.dataset
 
     os.makedirs(output_dir, exist_ok=True)
@@ -98,11 +102,13 @@ def compute_distances_by_checkpoint(args, output_dir="checkpoints_eval"):
     # Crea il DataFrame finale con le colonne sentence e category
     excel_df = df[["category", "sentence"]].copy()
 
+    checkpoints_dir = f"models/{alias}"
     # Step 2: Caricamento dei checkpoint e calcolo delle distanze
-    for file in sorted(os.listdir(checkpoints_dir), key=extract_ckpt_number):
+    all_checkpoints = os.listdir(checkpoints_dir) + [args.model]
+    for file in sorted(all_checkpoints, key=extract_ckpt_number):
         ckpt_path = os.path.join(checkpoints_dir, file)
         if not os.path.isdir(ckpt_path):
-            continue
+            ckpt_path = file
 
         try:
             model = SentenceTransformer(ckpt_path)
@@ -154,7 +160,7 @@ def compute_distances_by_checkpoint(args, output_dir="checkpoints_eval"):
 def compute_accuracy_by_checkpoint(args, output_dir="checkpoints_eval"):
     compute_distance = get_metric(args.metric)
 
-    checkpoints_dir = args.model
+    alias = args.alias
     model_name = args.model.replace("/", "_")
     dataset_version = args.dataset
 
@@ -166,11 +172,13 @@ def compute_accuracy_by_checkpoint(args, output_dir="checkpoints_eval"):
     categories = sorted(label_df["category"].unique())
     excel_df = pd.DataFrame({"category": categories})
 
+    checkpoints_dir = f"models/{alias}"
     # Step 2: Caricamento dei checkpoint e calcolo delle distanze
-    for file in sorted(os.listdir(checkpoints_dir), key=extract_ckpt_number):
+    all_checkpoints = os.listdir(checkpoints_dir) + [args.model]
+    for file in sorted(all_checkpoints, key=extract_ckpt_number):
         ckpt_path = os.path.join(checkpoints_dir, file)
         if not os.path.isdir(ckpt_path):
-            continue
+            ckpt_path = file
 
         try:
             model = SentenceTransformer(ckpt_path)
@@ -222,11 +230,11 @@ def compute_accuracy_by_checkpoint(args, output_dir="checkpoints_eval"):
     print(f"Salvato: {excel_path}")
     return excel_df
 
-def compute_correlation_by_checkpoint(args, scores_df, output_dir="checkpoints_eval"):
 
+def compute_correlation_by_checkpoint(args, scores_df, output_dir="checkpoints_eval"):
     compute_distance = get_metric(args.metric)
 
-    checkpoints_dir = args.model
+    alias = args.alias
     model_name = args.model.replace("/", "_")
     dataset_version = args.dataset
     knn = args.knn
@@ -239,11 +247,14 @@ def compute_correlation_by_checkpoint(args, scores_df, output_dir="checkpoints_e
     categories = sorted(test_df["Category"].unique())
     excel_df = pd.DataFrame({"category": categories})
 
+    checkpoints_dir = f"models/{alias}"
     # Step 2: Caricamento dei checkpoint e calcolo delle distanze
-    for file in sorted(os.listdir(checkpoints_dir), key=extract_ckpt_number):
+    all_checkpoints = os.listdir(checkpoints_dir) + [args.model]
+    for file in sorted(all_checkpoints, key=extract_ckpt_number):
         ckpt_path = os.path.join(checkpoints_dir, file)
         if not os.path.isdir(ckpt_path):
-            continue
+            ckpt_path = file
+            print(file)
 
         try:
             model = SentenceTransformer(ckpt_path)
@@ -268,7 +279,7 @@ def compute_correlation_by_checkpoint(args, scores_df, output_dir="checkpoints_e
             threshold = -get_best_threshold(args, model, centroids, label_df)
             print(f"Best threshold: {threshold:.4f}")
 
-            print(f"Computing {model_name} embeddings for test_set...")
+            print(f"Computing {file} embeddings for test_set...")
             embedded_sentences = {}
             for row in test_df.itertuples(index=False):
                 embedded_sentences[row.Name] = []
@@ -327,12 +338,12 @@ def compute_correlation_by_checkpoint(args, scores_df, output_dir="checkpoints_e
 
 
 def main():
-    parser = argparse.ArgumentParser() # Can be simplified
+    parser = argparse.ArgumentParser()  # Can be simplified
     parser = add_base_args(parser)
 
     args = parser.parse_args()
 
-    if args.run == "ckp_distance": # Temp
+    if args.run == "ckp_distance":  # Temp
         compute_distances_by_checkpoint(args)
         return
     if args.run == "ckp_correlation":
@@ -363,7 +374,8 @@ def main():
             embedded_sentences = compute_test_sentences_embeddings(args=args, model=model)
             if args.marks == "personal":
                 scores_df = get_personal_scores_df()
-                compute_correlation_personal_marks(args, embedded_sentences, centroids, test_df, scores_df, verbose=True)
+                compute_correlation_personal_marks(args, embedded_sentences, centroids, test_df, scores_df,
+                                                   verbose=True)
             else:
                 compute_correlation_form_marks(args, embedded_sentences, centroids, test_df, verbose=True)
         elif args.run == "distance":
@@ -382,16 +394,16 @@ def main():
     else:
         pass
         # break  # Se c'è un solo cluster, interrompiamo il ciclo
-    #reduced_embeddings = apply_pca(embeddings)
+    # reduced_embeddings = apply_pca(embeddings)
 
-    #clustering_algorithms = args.clustering_alg.split(",") if args.clustering_alg != "all" else [
+    # clustering_algorithms = args.clustering_alg.split(",") if args.clustering_alg != "all" else [
     #    "kmeans", "affinity", "meanshift", "spectral", "agglomerative", "dbscan", "optics", "birch", "bisecting_kmeans"]
 
-    #for alg in clustering_algorithms:
-        # print(f"Running clustering with {alg}...")
-        # labels = apply_clustering(reduced_embeddings, alg)
-        # score = silhouette_score(reduced_embeddings, labels)
-        # print(f"Silhouette Score for {alg}: {score:.4f}")
+    # for alg in clustering_algorithms:
+    # print(f"Running clustering with {alg}...")
+    # labels = apply_clustering(reduced_embeddings, alg)
+    # score = silhouette_score(reduced_embeddings, labels)
+    # print(f"Silhouette Score for {alg}: {score:.4f}")
 
 
 if __name__ == "__main__":
