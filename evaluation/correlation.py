@@ -1,9 +1,6 @@
 import numpy as np
 import json
 
-from google.colab import files
-from numpy import unique, where, mean
-from scipy.spatial import distance
 from openpyxl import Workbook
 
 from utils.utils import get_metric, get_label_score
@@ -72,8 +69,7 @@ def compute_correlation_form_marks(args, embedded_sentences, centroids, test_df,
         print(f">>> Correlation wrt averaged_score: {corr_avg_score:.3f}")
 
 
-def compute_correlation_personal_marks(args, embedded_sentences, centroids, test_df, scores_df, get_avg=False,
-                                       verbose=False):  # Make get_avg, verbose args parameters
+def compute_correlation_personal_marks(args, embedded_sentences, centroids, test_df, scores_df, get_avg=False, verbose=False):  # Make get_avg, verbose args parameters
 
     compute_distance = get_metric(args.metric)
     knn = args.knn
@@ -177,9 +173,6 @@ def partial_score_to_excel(args, embedded_sentences, centroids, test_df):
 
     # Salva il workbook in un file .xlsx
     wb.save(f"{model_name}@{threshold}-{dataset_version}.xlsx")
-
-    # Scarica il workbook
-    files.download(f"{model_name}@{threshold}-{dataset_version}.xlsx")
 
 
 # def partial_prob_to_excel(embeddings, embedded_sentences, test_df, clustering_model):

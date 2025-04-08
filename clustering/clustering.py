@@ -161,6 +161,7 @@ def apply_clustering(args, embeddings):
     else:
         raise ValueError(f"There exists a configuration for '{clustering_alg}' but it's not actually implemented.")
 
+    print(f"Applied {clustering_alg} algorithm.")
     yhat = clustering_model.fit_predict(embeddings)
     # Compute centroids for each unique cluster
     centroids = [np.mean(embeddings[np.where(yhat == cluster)], axis=0) for cluster in np.unique(yhat)]

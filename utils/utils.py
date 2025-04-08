@@ -1,22 +1,61 @@
 import numpy as np
 import pandas as pd
+import re
 
 from sklearn.decomposition import PCA
 from scipy.spatial import distance
-from sklearn.metrics import accuracy_score, roc_curve, auc
+from sklearn.metrics import accuracy_score, roc_curve, auc, silhouette_score
+from sklearn.metrics.pairwise import cosine_distances
 
 def apply_pca(embeddings):
     pca = PCA(n_components=0.95)  # Keep 95% variance
     return pca.fit_transform(embeddings)
 
-def get_basic_stat_clustering(yhat):
+def apply_filtering(args, embeddings):
+    filtering_threshold = args.filter_thr
+
+    # Calcola la matrice delle distanze coseno
+    dist_matrix = cosine_distances(embeddings)
+
+    # Raggruppa frasi con distanza coseno inferiore a 0.1
+    n = embeddings.shape[0]
+    groups = []
+    visited = set()
+
+    for i in range(n):
+        if i in visited:
+            continue
+        group = {i}
+        for j in range(i + 1, n):
+            if dist_matrix[i, j] < filtering_threshold:
+                group.add(j)
+                visited.add(j)
+        visited.add(i)
+        groups.append(group)
+
+    # Seleziona la frase più lunga (più parole) per ciascun gruppo
+    selected_indices = []
+    for group in groups:
+        if len(group) == 1:
+            selected_indices.append(group.pop())
+        else:
+            #longest_sentence_idx = max(group, key=lambda idx: len(sentences[idx].split())) No df available
+            selected_indices.append(min(group))
+
+    return embeddings[selected_indices]
+
+def get_basic_stat_clustering(yhat, embeddings):
   labels_for_cluster = [np.where(yhat == cluster_id)[0] for cluster_id in np.unique(yhat)]
   cluster_sizes = [len(indices) for indices in labels_for_cluster]
-  n_clusters = len(np.unique(yhat))
-  min_cluster_size = np.min(cluster_sizes)
-  mean_cluster_size = np.mean(cluster_sizes)
-  max_cluster_size = np.max(cluster_sizes)
-  return n_clusters, min_cluster_size, mean_cluster_size, max_cluster_size
+
+  stats = {}
+
+  stats["n_clusters"] = len(np.unique(yhat))
+  stats["min_cluster_size"] = np.min(cluster_sizes)
+  stats["mean_cluster_size"] = np.mean(cluster_sizes)
+  stats["max_cluster_size"] = np.max(cluster_sizes)
+  stats["silhouette_score"] = silhouette_score(embeddings, yhat)
+  return stats
 
 # Stampa le frasi raggruppate per cluster
 def visualize_clusters(sentences, yhat):
@@ -94,3 +133,7 @@ def get_personal_scores_df(path="datasets/scores/personal_score.xlsx"):
 
 def get_label_df(path="datasets/test_set/test_sentences.xlsx"):
     return pd.read_excel(path)
+
+def extract_ckpt_number(name):
+    match = re.search(r"-(\d+)", name)
+    return int(match.group(1)) if match else -1
