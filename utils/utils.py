@@ -12,7 +12,7 @@ def apply_pca(embeddings):
     return pca.fit_transform(embeddings)
 
 def apply_filtering(args, embeddings):
-    filtering_threshold = args.filter_thr
+    filtering_threshold = args.filter_eps
 
     # Calcola la matrice delle distanze coseno
     dist_matrix = cosine_distances(embeddings)

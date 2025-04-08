@@ -86,10 +86,6 @@ def main():
 
     args = parser.parse_args()
 
-    if args.run == "quantity":
-        compute_information_quantity(args)
-        return
-
     if args.run == "ckp_distance":  # Temp
         compute_distances_by_checkpoint(args)
         return
@@ -118,8 +114,9 @@ def main():
               f"mean={clustering_stats['mean_cluster_size']}, S={clustering_stats['silhouette_score']}")
         if args.run == "quantity":
             embedded_sentences = compute_test_sentences_embeddings(args=args, model=model)
-            compute_information_quantity(args, embedded_sentences, embeddings, centroids, test_df)
-        if args.run == "correlation":
+            scores_df = get_personal_scores_df()
+            compute_information_quantity(args, embedded_sentences, embeddings, centroids, test_df, scores_df, verbose=True)
+        elif args.run == "correlation":
             embedded_sentences = compute_test_sentences_embeddings(args=args, model=model)
             if args.marks == "personal":
                 scores_df = get_personal_scores_df()

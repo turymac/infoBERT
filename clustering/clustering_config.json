@@ -10,15 +10,16 @@
     "meanshift": {
         "bandwidth": 2.4
     },
-    "spectralclustering": {
+    "spectral": {
         "n_clusters": 8,
         "affinity": "rbf",
         "random_state": 42
     },
-    "agglomerativeclustering": {
-        "n_clusters": 8,
-        "affinity": "euclidean",
-        "linkage": "ward"
+    "agglomerative": {
+        "n_clusters": null,
+        "metric": "cosine",
+        "linkage": "complete",
+        "distance_threshold": 0.5
     },
     "dbscan": {
         "eps": 0.5,

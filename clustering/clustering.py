@@ -51,7 +51,7 @@ def apply_clustering(args, embeddings):
         """
         clustering_model = MeanShift(**clustering_params)
 
-    elif clustering_alg == "spectralclustering":
+    elif clustering_alg == "spectral":
         """
         Args:
           n_clusters : int = 8
@@ -72,7 +72,7 @@ def apply_clustering(args, embeddings):
         """
         clustering_model = SpectralClustering(**clustering_params)
 
-    elif clustering_alg == "agglomerativeclustering":
+    elif clustering_alg == "agglomerative":
         """
           Args:
               n_clusters : {

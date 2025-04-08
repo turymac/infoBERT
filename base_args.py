@@ -6,8 +6,12 @@ def add_base_args(parser):
     parser.add_argument("--marks", help="Marks to which compute correlation.",
                         type=str, choices=["personal", "form"], default="form")
     parser.add_argument("--dataset", help="Version of training dataset.",
-                        type=str, choices=['v2', 'v3'], required=True)
-    parser.add_argument("--clustering", help="Clustering algorithm to test (can be a comma-separated list or 'all').",
+                        type=str, required=True)
+    parser.add_argument("--filtering", help="Remove from training dataset sentences whose embeddings are <= eps close.",
+                        type=bool, default=False)
+    parser.add_argument("--filter_eps", help="Thresholds for filtering.",
+                        type=float, default=0.05)
+    parser.add_argument("--clustering", help="Clustering algorithm to test.",
                         type=str, required=True)
     parser.add_argument("--metric", help="Metric to measure the distance between embeddings.",
                         type=str, choices=["cosine", "euclidean", "cityblock", "chebyshev"], default="cosine")

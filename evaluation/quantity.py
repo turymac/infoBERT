@@ -36,7 +36,7 @@ def compute_information_quantity(args, embedded_sentences, embeddings, centroids
                 distances = [(compute_distance(emb_sentence, emb), weight) for emb, weight in zip(embeddings, weights)]
                 knn_distances = sorted(distances)[:knn]
                 # Calcola lo score parziale della frase
-                sentence_score = [max(0, (thresholds[id] - distance) * weight) for id, distance, weight in enumerate(knn_distances)]
+                sentence_score = [max(0, (thresholds[id] - distance) * weight) for id, (distance, weight) in enumerate(knn_distances)]
 
                 partial_scores.append(sentence_score)
             partial_scores = np.array(partial_scores)
