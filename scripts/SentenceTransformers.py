@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import re
 import sys
@@ -16,15 +17,17 @@ from evaluation.checkpoints import compute_distances_by_checkpoint, compute_corr
 from evaluation.correlation import compute_correlation_personal_marks, compute_correlation_form_marks
 from evaluation.distance import partial_distance_knn_to_excel
 from evaluation.accuracy import compute_accuracy, compute_auroc
-from evaluation.quantity import compute_information_quantity
+from evaluation.quantity import compute_information_quantity_personal, compute_information_quantity_form, compute_information_quantity_all_thr_form, compute_information_quantity_all_thr_personal
 from utils.utils import get_test_df, get_basic_stat_clustering, get_personal_scores_df, get_label_df, apply_filtering
 from clustering.clustering import apply_clustering
 
+# load configuration from JSON
+with open("base_config.json", "r") as f:
+    BASE_CONFIG = json.load(f)
 
 def compute_embeddings(args, model, save_path="datasets/training_set/precomputed_embeddings"):
     model_name = args.model.replace("/", "_")
     dataset_version = args.dataset
-    filtering = args.filtering
 
     os.makedirs(save_path, exist_ok=True)
     embedding_file = os.path.join(save_path, f"{dataset_version}_{model_name}_embeddings.npy")
@@ -43,8 +46,6 @@ def compute_embeddings(args, model, save_path="datasets/training_set/precomputed
         embeddings = model.encode(sentences, show_progress_bar=True)
         np.save(embedding_file, embeddings)
 
-    if filtering:
-        embeddings = apply_filtering(args, embeddings)
 
     return embeddings
 
@@ -103,6 +104,10 @@ def main():
     embeddings = compute_embeddings(args=args, model=model)
     # Write compute_test_sentences_label
 
+    if args.filtering:
+        filter_eps = BASE_CONFIG["filter_eps"]
+        embeddings = apply_filtering(embeddings, filter_eps)
+
     test_df = get_test_df()
 
     yhat, centroids = apply_clustering(args=args, embeddings=embeddings)
@@ -114,8 +119,11 @@ def main():
               f"mean={clustering_stats['mean_cluster_size']}, S={clustering_stats['silhouette_score']}")
         if args.run == "quantity":
             embedded_sentences = compute_test_sentences_embeddings(args=args, model=model)
-            scores_df = get_personal_scores_df()
-            compute_information_quantity(args, embedded_sentences, embeddings, centroids, test_df, scores_df, verbose=True)
+            if args.marks == "personal":
+              scores_df = get_personal_scores_df()
+              compute_information_quantity_all_thr_personal(args, embedded_sentences, embeddings, centroids, test_df, scores_df, verbose=True)
+            else:
+              compute_information_quantity_all_thr_form(args, embedded_sentences, embeddings, centroids, test_df, verbose=True)
         elif args.run == "correlation":
             embedded_sentences = compute_test_sentences_embeddings(args=args, model=model)
             if args.marks == "personal":

@@ -11,13 +11,12 @@ def apply_pca(embeddings):
     pca = PCA(n_components=0.95)  # Keep 95% variance
     return pca.fit_transform(embeddings)
 
-def apply_filtering(args, embeddings):
-    filtering_threshold = args.filter_eps
+def apply_filtering(embeddings, filter_eps):
 
     # Calcola la matrice delle distanze coseno
     dist_matrix = cosine_distances(embeddings)
 
-    # Raggruppa frasi con distanza coseno inferiore a 0.1
+    # Raggruppa frasi con distanza coseno inferiore a filter_eps
     n = embeddings.shape[0]
     groups = []
     visited = set()
@@ -27,7 +26,7 @@ def apply_filtering(args, embeddings):
             continue
         group = {i}
         for j in range(i + 1, n):
-            if dist_matrix[i, j] < filtering_threshold:
+            if dist_matrix[i, j] < filter_eps:
                 group.add(j)
                 visited.add(j)
         visited.add(i)
@@ -41,6 +40,8 @@ def apply_filtering(args, embeddings):
         else:
             #longest_sentence_idx = max(group, key=lambda idx: len(sentences[idx].split())) No df available
             selected_indices.append(min(group))
+
+    print(f"{n-len(selected_indices)} sentences filtered out")
 
     return embeddings[selected_indices]
 
@@ -108,7 +109,7 @@ def get_best_threshold(args, model, centroids, label_df):
 
 # Auxiliary function to compute the final label score from a matrix
 def get_label_score(args, scores_matrix):
-    score = args.score
+    score = args.aggr_score
 
     if score == 'sum':
         row_scores = np.sum(scores_matrix, axis=1)

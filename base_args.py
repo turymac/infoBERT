@@ -9,13 +9,13 @@ def add_base_args(parser):
                         type=str, required=True)
     parser.add_argument("--filtering", help="Remove from training dataset sentences whose embeddings are <= eps close.",
                         type=bool, default=False)
-    parser.add_argument("--filter_eps", help="Thresholds for filtering.",
-                        type=float, default=0.05)
+    # parser.add_argument("--filter_eps", help="Thresholds for filtering.",
+    #                     type=float, default=0.05)
     parser.add_argument("--clustering", help="Clustering algorithm to test.",
                         type=str, required=True)
     parser.add_argument("--metric", help="Metric to measure the distance between embeddings.",
                         type=str, choices=["cosine", "euclidean", "cityblock", "chebyshev"], default="cosine")
-    parser.add_argument("--score", help="Scoring function to assign score to labels.",
+    parser.add_argument("--aggr_score", help="Scoring function to assign score to labels.",
                         type=str, choices=["sum", "sqrt_sum", "inverse", "gaussian",], default="sum")
     parser.add_argument("--thresholds", help="Thresholds to distinguish between informative and non-informative content.",
                         type=float, nargs='+', default=0.5)
