@@ -1,6 +1,8 @@
 import numpy as np
 from scipy.special import logsumexp
 from collections import defaultdict
+from sklearn.metrics.pairwise import euclidean_distances
+from openpyxl import Workbook
 
 from utils.utils import get_metric, get_label_score
 
@@ -8,7 +10,7 @@ from utils.utils import get_metric, get_label_score
 # ============================
 # STEP 1 - Calcolo dei voxel
 # ============================
-def build_axis_aligned_voxels(embeddings, min_side=-np.inf, max_side=1e-5):
+def build_axis_aligned_voxels(embeddings, min_side=-np.inf, max_side=np.inf):
     embeddings = np.array(embeddings)
     n, d = embeddings.shape
     voxel_bounds = []
@@ -38,6 +40,11 @@ def build_axis_aligned_voxels(embeddings, min_side=-np.inf, max_side=1e-5):
 
     return voxel_bounds
 
+def rbf_weights(X, C, gamma=1e-2): #Make gamma a parameter in args
+    distances = euclidean_distances(X, C)
+    similarities = np.exp(-gamma * distances**2)
+    weights = similarities.sum(axis=1)
+    return weights
 
 # # ============================
 # # STEP 2 - Clustering
@@ -81,7 +88,7 @@ def compute_cluster_weights_logsafe(voxel_bounds, labels):
 # ============================
 # STEP 4 - Matching test embedding
 # ============================
-def is_inside_voxel(point, lower, upper, tolerance=0.1):
+def is_inside_voxel(point, lower, upper, tolerance=0):
     """
     Verifica se il punto cade nel voxel su almeno min_percentage delle dimensioni.
     """
@@ -98,7 +105,7 @@ def is_inside_voxel(point, lower, upper, tolerance=0.1):
     return percentage_inside
 
 
-def match_test_embedding(test_point, voxel_bounds, labels, cluster_weights, tolerance=0.1, min_percentage=0.9):
+def match_test_embedding(test_point, voxel_bounds, labels, cluster_weights, tolerance=0, min_percentage=0.9):
     """
     Trova il voxel in cui cade il test_point rispettando la tolleranza su almeno min_percentage delle dimensioni.
     """
@@ -123,7 +130,7 @@ def match_test_embedding(test_point, voxel_bounds, labels, cluster_weights, tole
     }
     # return
 
-def compute_information_quantity_voxel_personal(args, embedded_sentences, embeddings, yhat, test_df, scores_df, verbose=True):
+def compute_information_quantity_voxel_personal(args, embedded_sentences, embeddings, centroids, yhat, test_df, scores_df, verbose=True):
     compute_distance = get_metric(args.metric)
     knn = args.knn
 
@@ -141,6 +148,8 @@ def compute_information_quantity_voxel_personal(args, embedded_sentences, embedd
     # Iniziamo ad analizzare le categorie
     corr_across_categories = []
 
+    weights = rbf_weights(embeddings, centroids)
+
     for cat in categories:
         cat_df = test_df.loc[test_df['Category'] == cat].copy()
         cat_df.sort_values(by="Name", inplace=True)
@@ -157,18 +166,21 @@ def compute_information_quantity_voxel_personal(args, embedded_sentences, embedd
                     voxel_bounds=voxel_bounds,
                     labels=yhat,
                     cluster_weights=cluster_weights_log,
-                    tolerance=0.1,
-                    min_percentage=0.9
+                    tolerance=0,
+                    min_percentage=0.01
                 )
 
                 if match["matched_voxel_index"] is not None:
                     # C'è stato un match
                     matched_embedding = embeddings[match["matched_voxel_index"]]
-                    cluster_weight = match["cluster_weight"]
+                    cluster_weight = weights[match["cluster"]]
                     distance = compute_distance(emb_sentence, matched_embedding)
-                    sentence_score = cluster_weight * distance
+                    sentence_score = cluster_weight * (1/distance)
+                else:
+                    # Se nessun match, score nullo
+                    sentence_score = 0.0
 
-                    partial_scores.append(sentence_score)
+                partial_scores.append([sentence_score])
 
             partial_scores = np.array(partial_scores)
             punteggio_totale = get_label_score(args, partial_scores)
@@ -193,3 +205,100 @@ def compute_information_quantity_voxel_personal(args, embedded_sentences, embedd
 
 def compute_information_quantity_voxel_form(args, embedded_sentences, embeddings, test_df, verbose=True):
     pass
+
+#EXCEL
+def compute_information_quantity_voxel_personal_excel(args, embedded_sentences, embeddings, centroids, yhat, test_df, scores_df, verbose=True):
+    compute_distance = get_metric(args.metric)
+    knn = args.knn
+
+    if knn != 1:
+        raise ValueError("Questa versione supporta solo knn = 1 (una sola threshold)")
+
+    categories = sorted(test_df["Category"].unique())
+    category_to_corrs = {cat: [] for cat in categories}
+    mean_corrs = []
+
+
+    weights = rbf_weights(embeddings, centroids)
+
+    # Costruzione voxel
+    voxel_bounds = build_axis_aligned_voxels(embeddings)
+    cluster_volumes, cluster_weights_log = compute_cluster_weights_logsafe(voxel_bounds, yhat)
+
+    # ====== Aggiunta Excel Workbook ======
+    wb = Workbook()
+    ws = wb.active
+    ws.append(["Name", "Category", "Frase", "Score Parziale", "", "Distanza dal Centroide"])
+
+    # Iniziamo ad analizzare le categorie
+    corr_across_categories = []
+
+    for cat in categories:
+        cat_df = test_df.loc[test_df['Category'] == cat].copy()
+        cat_df.sort_values(by="Name", inplace=True)
+
+        model_cat_scores = []
+
+        for product in cat_df.Name.tolist():
+            partial_scores = []
+
+            # Aggiunge una riga di intestazione per il prodotto
+            ws.append([product, cat])
+
+            for original_sentence, emb_sentence in embedded_sentences[product]:
+                # Controllo appartenenza ai voxel
+                match = match_test_embedding(
+                    test_point=emb_sentence,
+                    voxel_bounds=voxel_bounds,
+                    labels=yhat,
+                    cluster_weights=cluster_weights_log,
+                    tolerance=0.0,
+                    min_percentage=0.01
+                )
+
+                if match["matched_voxel_index"] is not None:
+                    matched_embedding = embeddings[match["matched_voxel_index"]]
+                    cluster_weight = weights[match["cluster"]]
+                    distance = compute_distance(emb_sentence, matched_embedding)
+                    sentence_score = cluster_weight * (1 / distance)
+                else:
+                    sentence_score = 0.0
+                    distance = float('inf')  # per chiarezza
+
+                partial_scores.append([sentence_score])
+
+                # Scrivi la frase e lo score parziale nel file Excel
+                ws.append(["", "", original_sentence, f"{sentence_score:.6f}", "", f"{distance:.6f}"])
+
+            partial_scores = np.array(partial_scores)
+            punteggio_totale = get_label_score(args, partial_scores)
+            model_cat_scores.append(punteggio_totale)
+
+            # Riga finale con il punteggio totale del prodotto
+            ws.append(["", "", "", f"Totale: {punteggio_totale:.6f}", "", ""])
+            ws.append(["", "", "", "", "", ""])
+
+        # Confronto con i veri punteggi
+        my_cat_scores_df = scores_df.loc[scores_df['Category'] == cat].copy()
+        my_cat_scores_df.sort_values(by="Name", inplace=True)
+        my_cat_scores = my_cat_scores_df.Norm_score.tolist()
+
+        cat_corr = np.corrcoef(model_cat_scores, my_cat_scores)[0, 1]
+        category_to_corrs[cat].append(cat_corr)
+        corr_across_categories.append(cat_corr)
+
+        if verbose:
+            print(f"{cat} → Correlation: {cat_corr:.3f}")
+
+    mean_corr = np.mean(corr_across_categories)
+    mean_corrs.append(mean_corr)
+
+    # ====== Salvataggio Excel ======
+    model_name = args.model
+    dataset_version = args.dataset
+
+    filename = f"{model_name}_voxel_scores-{dataset_version}.xlsx"
+    wb.save(filename)
+    print(f"Risultati salvati in '{filename}'.")
+
+    return category_to_corrs, mean_corrs

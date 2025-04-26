@@ -105,7 +105,7 @@ def main():
     embeddings = compute_embeddings(args=args, model=model)
     # Write compute_test_sentences_label
 
-    if args.filtering:
+    if args.filtering is True:
         filter_eps = BASE_CONFIG["filter_eps"]
         embeddings = apply_filtering(embeddings, filter_eps)
 
@@ -127,7 +127,7 @@ def main():
             else:
                 compute_information_quantity_voxel_form(args, embedded_sentences, embeddings, yhat, test_df,
                                                           verbose=True)
-        if args.run == "quantity":
+        elif args.run == "quantity":
             embedded_sentences = compute_test_sentences_embeddings(args=args, model=model)
             if args.marks == "personal":
               scores_df = get_personal_scores_df()
