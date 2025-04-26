@@ -18,6 +18,7 @@ from evaluation.correlation import compute_correlation_personal_marks, compute_c
 from evaluation.distance import partial_distance_knn_to_excel
 from evaluation.accuracy import compute_accuracy, compute_auroc
 from evaluation.quantity import compute_information_quantity_personal, compute_information_quantity_form, compute_information_quantity_all_thr_form, compute_information_quantity_all_thr_personal
+from evaluation.voxel import compute_information_quantity_voxel_personal, compute_information_quantity_voxel_form
 from utils.utils import get_test_df, get_basic_stat_clustering, get_personal_scores_df, get_label_df, apply_filtering
 from clustering.clustering import apply_clustering
 
@@ -117,6 +118,15 @@ def main():
     if clustering_stats["n_clusters"] > 1:
         print(f"n_clusters={clustering_stats['n_clusters']}, m={clustering_stats['min_cluster_size']}, M={clustering_stats['max_cluster_size']}, " +
               f"mean={clustering_stats['mean_cluster_size']}, S={clustering_stats['silhouette_score']}")
+        if args.run == "voxel":
+            embedded_sentences = compute_test_sentences_embeddings(args=args, model=model)
+            if args.marks == "personal":
+                scores_df = get_personal_scores_df()
+                compute_information_quantity_voxel_personal(args, embedded_sentences, embeddings, yhat, test_df,
+                                                              scores_df, verbose=True)
+            else:
+                compute_information_quantity_voxel_form(args, embedded_sentences, embeddings, yhat, test_df,
+                                                          verbose=True)
         if args.run == "quantity":
             embedded_sentences = compute_test_sentences_embeddings(args=args, model=model)
             if args.marks == "personal":
