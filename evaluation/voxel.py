@@ -3,6 +3,8 @@ from scipy.special import logsumexp
 from collections import defaultdict
 from sklearn.metrics.pairwise import euclidean_distances
 from openpyxl import Workbook
+from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
 
 from utils.utils import get_metric, get_label_score
 
@@ -10,35 +12,39 @@ from utils.utils import get_metric, get_label_score
 # ============================
 # STEP 1 - Calcolo dei voxel
 # ============================
-def build_axis_aligned_voxels(embeddings, min_side=-np.inf, max_side=np.inf):
+from sklearn.neighbors import NearestNeighbors
+import numpy as np
+
+def build_axis_aligned_voxels(embeddings, k=1, min_side=-np.inf, max_side=np.inf):
     embeddings = np.array(embeddings)
     n, d = embeddings.shape
     voxel_bounds = []
 
+    # Costruisci il modello KNN (k+1 per includere il punto stesso)
+    nbrs = NearestNeighbors(n_neighbors=k+1, algorithm='auto').fit(embeddings)
+    _, indices = nbrs.kneighbors(embeddings)
+
     for i in range(n):
         center = embeddings[i]
+        neighbors_idx = indices[i][1:]  # Escludi il punto stesso
         half_widths = np.zeros(d)
 
-        for k in range(d):
-            # inizializza con un valore alto, per cercare la minima distanza su quell'asse
+        for k_dim in range(d):
             min_diff = float("inf")
-
-            for j in range(n):
-                if i == j:
-                    continue
-                diff = abs(embeddings[j, k] - center[k])
+            for j in neighbors_idx:
+                diff = abs(embeddings[j, k_dim] - center[k_dim])
                 if diff < min_diff:
                     min_diff = diff
 
-            # imposto il lato con min/max bounds
             clamped_half_width = 0.5 * np.clip(min_diff, min_side, max_side)
-            half_widths[k] = clamped_half_width
+            half_widths[k_dim] = clamped_half_width
 
         lower = center - half_widths
         upper = center + half_widths
         voxel_bounds.append((lower, upper))
 
     return voxel_bounds
+
 
 def rbf_weights(X, C, gamma=1e-2): #Make gamma a parameter in args
     distances = euclidean_distances(X, C)
@@ -253,7 +259,7 @@ def compute_information_quantity_voxel_personal_excel(args, embedded_sentences, 
                     labels=yhat,
                     cluster_weights=cluster_weights_log,
                     tolerance=0.0,
-                    min_percentage=0.01
+                    min_percentage=1
                 )
 
                 if match["matched_voxel_index"] is not None:
@@ -302,3 +308,71 @@ def compute_information_quantity_voxel_personal_excel(args, embedded_sentences, 
     print(f"Risultati salvati in '{filename}'.")
 
     return category_to_corrs, mean_corrs
+
+
+def plot_voxels(reduced_embeddings, voxel_bounds, labels=None, n_components=2):
+    # Plotting
+    if n_components == 2:
+        plt.figure(figsize=(10, 8))
+        plt.scatter(reduced_embeddings[:, 0], reduced_embeddings[:, 1], c='blue', alpha=0.6, label='Embeddings')
+
+        for (lower, upper) in voxel_bounds:
+            width, height = upper - lower
+            rect = plt.Rectangle(lower, width, height, fill=False, edgecolor='red', linewidth=1)
+            plt.gca().add_patch(rect)
+
+        plt.xlabel('PCA Component 1')
+        plt.ylabel('PCA Component 2')
+        plt.title('Voxel Visualization with PCA (2D)')
+        plt.grid(True)
+        plt.legend()
+        plt.show()
+
+    elif n_components == 3:
+        fig = plt.figure(figsize=(10, 8))
+        ax = fig.add_subplot(111, projection='3d')
+        ax.scatter(reduced_embeddings[:, 0], reduced_embeddings[:, 1], reduced_embeddings[:, 2], c='blue', alpha=0.6,
+                   label='Embeddings')
+
+        for (lower, upper) in voxel_bounds:
+            r = [lower, upper]
+            for s, e in zip(*np.array(np.meshgrid(*zip(lower, upper))).reshape(2, -1, 3)):
+                ax.plot3D(*zip(s, e), color="red", linewidth=0.3)
+
+        ax.set_xlabel('PCA Component 1')
+        ax.set_ylabel('PCA Component 2')
+        ax.set_zlabel('PCA Component 3')
+        ax.set_title('Voxel Visualization with PCA (3D)')
+        plt.legend()
+        plt.show()
+
+    else:
+        raise ValueError("n_components must be either 2 or 3")
+
+
+def pca_then_voxel_and_plot(embeddings, n_components=2, min_side=-np.inf, max_side=np.inf):
+    """
+    Applica PCA agli embeddings, calcola i voxel bounds sugli embeddings ridotti
+    e visualizza il risultato.
+    """
+    embeddings = np.array(embeddings)
+
+    # PCA
+    pca = PCA(n_components=n_components)
+    reduced_embeddings = pca.fit_transform(embeddings)
+
+    # Calcola voxel bounds sui dati ridotti
+    voxel_bounds = build_axis_aligned_voxels(reduced_embeddings, min_side=min_side, max_side=max_side)
+
+    # Visualizzazione
+    plot_voxels(reduced_embeddings, voxel_bounds, n_components=n_components)
+
+    return reduced_embeddings, voxel_bounds
+
+def main():
+    embeddings = np.load("../datasets/training_set/precomputed_embeddings/v2_paraphrase-mpnet-base-v2_embeddings.npy")
+    reduced_embeddings, voxel_bounds = pca_then_voxel_and_plot(embeddings[:50])
+
+
+if __name__ == "__main__":
+    main()
